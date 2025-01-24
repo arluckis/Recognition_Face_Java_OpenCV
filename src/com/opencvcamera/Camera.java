@@ -9,6 +9,8 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 
 public class Camera extends JFrame {
+	private boolean isCameraActive = true;
+
     private JLabel cameraScreen = new JLabel();
     private VideoCapture capture = new VideoCapture(0);
     private CascadeClassifier faceDetector = new CascadeClassifier("src/com/opencvcamera/haarcascade_frontalface_default.xml");
@@ -22,10 +24,18 @@ public class Camera extends JFrame {
         btnCadastro.setBounds(620, 600, 120, 40);
         btnReconhecer.setBounds(820, 600, 120, 40);
 
-
+ 
 
         btnCadastro.addActionListener(e -> loginAdm());
-        btnReconhecer.addActionListener(e -> reconhecerFace());
+        btnReconhecer.addActionListener(e -> {
+            int reconhecida = reconhecerFace(); 
+            if(reconhecida==1) {
+            	abrirSegundaTela();
+            	cameraScreen.setVisible(false);
+            	btnCadastro.setVisible(false);
+            	btnReconhecer.setVisible(false);
+            }
+        });
         
         add(cameraScreen);
         add(btnCadastro);
@@ -47,7 +57,7 @@ public class Camera extends JFrame {
     public void startCamera() {
         Mat image = new Mat();
         MatOfRect faces = new MatOfRect();
-        while (capture.read(image)) {
+        while (isCameraActive && capture.read(image)) {
             faceDetector.detectMultiScale(image, faces);
             for (Rect rect : faces.toArray()) {
                 Imgproc.rectangle(image, rect.tl(), rect.br(), new Scalar(0, 255, 0), 2);
@@ -56,6 +66,7 @@ public class Camera extends JFrame {
         }
     }
 
+
     private byte[] matToBytes(Mat image) {
         MatOfByte buf = new MatOfByte();
         Imgcodecs.imencode(".jpg", image, buf);
@@ -63,7 +74,7 @@ public class Camera extends JFrame {
     }
 
     private void loginAdm() {
-    	String password = JOptionPane.showInputDialog(this, "Digite a senha de Administrador:");
+    	String password = JOptionPane.showInputDialog(this, "Digite a senha de Administrador: (Padrão: admin)");
     	if(password.equals("admin")) {
     		cadastrarFace();
     	}
@@ -96,7 +107,7 @@ public class Camera extends JFrame {
         clicked = false;  // Reseta a variável após cadastro
     }
  // Método para reconhecer uma face comparando com imagens cadastradas
-    private void reconhecerFace() {
+    private int reconhecerFace() {
         clicked = true;  // Indica que a imagem deve ser capturada para reconhecimento
 
         Mat image = new Mat();
@@ -108,8 +119,8 @@ public class Camera extends JFrame {
             if (faces.toArray().length > 0) {
                 String[] imagesList = new java.io.File("cadastro/").list();
                 if (imagesList == null || imagesList.length == 0) {
-                    JOptionPane.showMessageDialog(this, "Nenhuma face cadastrada para reconhecimento.");
-                    return;
+                    JOptionPane.showMessageDialog(this, "Nenhuma face cadastrada para reconhecimento. Contate o administrador do programa.");
+                    return 0;
                 }
 
                 boolean matchFound = false;
@@ -120,7 +131,7 @@ public class Camera extends JFrame {
                     if (image.size().equals(registeredFace.size())) {
                         JOptionPane.showMessageDialog(this, "Face reconhecida: " + fileName.replace(".jpg", ""));
                         matchFound = true;
-                        break;
+                        return 1;
                     }
                 }
 
@@ -132,6 +143,34 @@ public class Camera extends JFrame {
             }
         }
         clicked = false;  // Reseta a variável após reconhecimento
+        return 0;
+    }
+
+    
+    private void abrirSegundaTela() {
+    	isCameraActive = false;
+        if (capture.isOpened()) {
+            capture.release();
+        }
+        JButton btn1 = new JButton("Adicionar Fatia");
+        JLabel text = new JLabel("0");  
+        JLabel qntFatias = new JLabel("Conte quantas fatias de pizza você comeu no rodízio.");  
+        int[] fatias = {0};  
+
+        btn1.addActionListener(e -> {
+            fatias[0]++;  
+            text.setText(String.valueOf(fatias[0]));  
+        });
+
+        btn1.setBounds(670, 300, 200, 40);
+        text.setBounds(765, 400, 200, 40);
+        qntFatias.setBounds(620, 250, 300, 40);
+
+        add(btn1);
+        add(text);
+        add(qntFatias);
+
+        repaint();  // Atualiza a interface para exibir os novos componentes
     }
 
 
